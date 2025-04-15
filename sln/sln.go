@@ -77,7 +77,8 @@ func (sln *Sln) CompileCommandsJson(conf string) ([]CompileCommand, error) {
 
 			inc, def, err := pro.FindConfig(conf)
 			if err != nil {
-				return cmdList, err
+				fmt.Println(err)
+				continue
 			}
 			willReplaceEnv := map[string]string{
 				"$(SolutionDir)": sln.SolutionDir,
