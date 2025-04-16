@@ -17,7 +17,15 @@ type Project struct {
 	XMlName             xml.Name              `xml:"Project"`
 	ItemGroup           []ItemGroup           `xml:"ItemGroup"`
 	ItemDefinitionGroup []ItemDefinitionGroup `xml:"ItemDefinitionGroup"`
+	PropertyGroup       []PropertyGroup       `xml:"PropertyGroup"`
 }
+
+type PropertyGroup struct {
+	XMLName     xml.Name `xml:"PropertyGroup"`
+	Condition   string   `xml:"Condition,attr"`
+	IncludePath string   `xml:"IncludePath"`
+}
+
 type ItemGroup struct {
 	XMLName                  xml.Name               `xml:"ItemGroup"`
 	Label                    string                 `xml:"Label,attr"`
@@ -87,7 +95,7 @@ func NewProject(path string) (Project, error) {
 	return pro, nil
 }
 
-//return include, definition,error
+// return include, definition,error
 func (pro *Project) FindConfig(conf string) (string, string, error) {
 	var cfgList []ProjectConfiguration
 	for _, v := range pro.ItemGroup {
@@ -110,6 +118,12 @@ func (pro *Project) FindConfig(conf string) (string, string, error) {
 	if !found {
 		return "", "", errors.New(pro.ProjectPath + ":not found " + conf)
 	}
+	var include string
+	for _, v := range pro.PropertyGroup {
+		if strings.Contains(v.Condition, conf) && v.IncludePath != "" {
+			include = v.IncludePath + ";"
+		}
+	}
 	for _, v := range pro.ItemDefinitionGroup {
 		if strings.Contains(v.Condition, conf) {
 			cl := v.ClCompile
@@ -129,7 +143,7 @@ func (pro *Project) FindConfig(conf string) (string, string, error) {
 				willReplaceEnv[fmt.Sprintf("$(%s)", kv[0])] = kv[1]
 			}
 
-			include := cl.AdditionalIncludeDirectories
+			include += cl.AdditionalIncludeDirectories
 			def := cl.PreprocessorDefinitions
 			for k, v := range willReplaceEnv {
 				if strings.Contains(include, k) {
